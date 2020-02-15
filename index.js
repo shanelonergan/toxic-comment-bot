@@ -12,22 +12,43 @@ const analyzeMessage = (message) => {
     const results = fetchToxicAPI(message)
     const originalMessage = results.original_text
     const predictions = results.predictions
+
+    let toxicIndicator = false
+
+    let response
     let responsePart1 = 'It looks like your message contains toxic speech. It has been flagged as: '
     let responsePart2 = 'Please refrain from using this kind of speech. Our slack community is one of love and inclusion, and we would like to keep it that way'
-    let flags = []
-    if (predictions.toxic > 0.75) {
-        flags.push('toxic')
-    } else if (predictions.severe_toxic) {
-        flags.push('severely toxic')
-    } else if (predictions.obscene) {
-        flags.push('obscene')
-    } else if (predictions.threat) {
-        flags.push('threatening')
-    } else if (predictions.insult) {
-        flags.push('insulting')
-    } else if (predictions.identity_hate) {
-        flags.push('identity hate')
+
+    for (const flag in predictions) {
+        if (predictions[flag] >= 0.75) {
+            toxicIndicator = true
+        }
     }
+
+    if (toxicIndicator) {
+        let flags = []
+
+        if (predictions.toxic > 0.75) {
+            flags.push('toxic')
+        } else if (predictions.severe_toxic) {
+            flags.push('severely toxic')
+        } else if (predictions.obscene) {
+            flags.push('obscene')
+        } else if (predictions.threat) {
+            flags.push('threatening')
+        } else if (predictions.insult) {
+            flags.push('insulting')
+        } else if (predictions.identity_hate) {
+            flags.push('identity hate')
+        }
+
+        const flagsStr = flags.join(', ')
+
+        response = responsePart1 + flagsStr + responsePart2
+    }
+
+    return response
+
 }
 
 const fetchToxicAPI = (message) => {
@@ -49,7 +70,10 @@ bot.on('start', function() {
         icon_emoji: ':rotating_light:'
     };
 
-    fetchToxicAPI("hello, I don't like you")
+    bot.on('message', msg => {
+        analyzeMessage(msg)
+        bot.postMessage(msg.user, "hi", { as_user: true }
+    })
 
     // define channel, where bot exist. You can adjust it there https://my.slack.com/services
     // bot.postMessageToChannel('general', 'sorry', params);
