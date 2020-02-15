@@ -9,20 +9,26 @@ const bot = new SlackBot({
 });
 
 const analyzeMessage = (message) => {
-    fetchToxicAPI(message)
+    const results = fetchToxicAPI(message)
+    const originalMessage = results.original_text
+    const predictions = results.predictions
+    let responsePart1 = 'It looks like your message contains toxic speech. It has been flagged as: '
+    let responsePart2 = 'Please refrain from using this kind of speech. Our slack community is one of love and inclusion, and we would like to keep it that way'
+    let flags = []
+    if (predictions.toxic > 0.75) {
+        flags.push('toxic')
+    } else if (predictions.severe_toxic) {
+        flags.push('severely toxic')
+    } else if (predictions.obscene) {
+        flags.push('obscene')
+    } else if (predictions.threat) {
+        flags.push('threatening')
+    } else if (predictions.insult) {
+        flags.push('insulting')
+    } else if (predictions.identity_hate) {
+        flags.push('identity hate')
+    }
 }
-
-// const fetchToxicAPI = (message) => {
-//     fetch('http://max-toxic-comment-classifier.max.us-south.containers.appdomain.cloud/swagger.json/model/predict', {
-//         method: 'POST',
-//         headers: {
-//             'Content-Type': 'application/json',
-//         },
-//         body: JSON.stringify(message)
-//     })
-//     .then(res => res.json())
-//     .then(console.log)
-// }
 
 const fetchToxicAPI = (message) => {
     axios.post('http://max-toxic-comment-classifier.max.us-south.containers.appdomain.cloud/model/predict', {
