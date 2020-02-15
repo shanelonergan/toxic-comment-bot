@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/shanelonergan/slackbot/issues"
   },
-  "homepage": "https://github.com/shanelonergan/slackbot#readme"
+  "homepage": "https://github.com/shanelonergan/slackbot#readme",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "slackbots": "^1.2.0"
+  }
 }
