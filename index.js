@@ -78,11 +78,15 @@ const fetchToxicAPI = async (message, username) => {
 
 const handleMessage = async (msg, user) => {
     const response = await fetchToxicAPI(msg)
+    let userData
     console.log(response, 71)
     console.log(user, 82)
 
     const users = await bot.getUsers()
-    users ? console.log(users) : null
+    if (users) {
+        userData = users['members'].filter(member => member.id === user)
+        console.log(userData.profile.display_name, 88)
+    }
 
     response ? bot.postEphemeral('CTPG037K4', user, response, params) : null
 }
