@@ -8,8 +8,8 @@ const bot = new SlackBot({
     name: 'Toxic Comment Bot'
 });
 
-const analyzeMessage = (message) => {
-    const results = fetchToxicAPI(message)
+const analyzeMessage = async (message) => {
+    const results = await fetchToxicAPI(message)
     const originalMessage = results.original_text
     const predictions = results.predictions
 
@@ -60,22 +60,34 @@ const fetchToxicAPI = (message) => {
     console.log(res.data.results)
     })
     .catch((error) => {
-    console.error(error)
+    console.error(error.config)
     })
 }
 
+const handleMessage = () => {
+    let response
+    if (msg.bot_id === undefined) {
+        console.log(msg.text)
+        response = analyzeMessage(msg.text)
+        response ? bot.postMessage(msg.user, response, { as_user: true }) : null
+    }
+}
+
 bot.on('start', function() {
-    // more information about additional params https://api.slack.com/methods/chat.postMessage
+
     const params = {
         icon_emoji: ':rotating_light:'
     };
 
-    bot.on('message', msg => {
-        analyzeMessage(msg)
-        bot.postMessage(msg.user, "hi", { as_user: true }
-    })
-
     // define channel, where bot exist. You can adjust it there https://my.slack.com/services
-    // bot.postMessageToChannel('general', 'sorry', params);
+    bot.postMessageToChannel('general', 'I am listening...', params);
 
 });
+
+bot.on('message', (data) => {
+    if(data.type !== 'message') {
+        return;
+    }
+    handleMessage(data.text);
+})
+
