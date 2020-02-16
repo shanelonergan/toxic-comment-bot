@@ -12,15 +12,15 @@ const params = {
     icon_emoji: ':rotating_light:'
 };
 
-const analyzeMessage = (results, bot) => {
+const analyzeMessage = (results, username) => {
     const originalMessage = results.original_text
     const predictions = results.predictions
 
     let toxicIndicator = false
 
     let response
-    let responsePart1 = 'It looks like your message contains toxic speech. It has been flagged as: '
-    let responsePart2 = '. Please refrain from using this kind of speech. Our slack community is one of love and inclusion, and we would like to keep it that way'
+    let responsePart1 = `it looks like your message contains toxic speech. It has been flagged as: `
+    let responsePart2 = '. Please refrain from using this kind of speech. Our slack community is one of love and inclusion, and we would like to keep it that way.'
 
     for (const flag in predictions) {
         if (predictions[flag] >= 0.75) {
@@ -33,17 +33,19 @@ const analyzeMessage = (results, bot) => {
 
         if (predictions.toxic > 0.75) {
             flags.push('toxic')
-        } else if (predictions.severe_toxic) {
+        } if (predictions.severe_toxic > 0.75) {
             flags.push('severely toxic')
-        } else if (predictions.obscene) {
+        } if (predictions.obscene > 0.75) {
             flags.push('obscene')
-        } else if (predictions.threat) {
+        } if (predictions.threat > 0.75) {
             flags.push('threatening')
-        } else if (predictions.insult) {
+        } if (predictions.insult > 0.75) {
             flags.push('insulting')
-        } else if (predictions.identity_hate) {
+        } if (predictions.identity_hate > 0.75) {
             flags.push('identity hate')
         }
+
+        console.log(flags)
 
         const flagsStr = flags.join(', ')
 
@@ -56,7 +58,7 @@ const analyzeMessage = (results, bot) => {
 
 }
 
-const fetchToxicAPI = async (message) => {
+const fetchToxicAPI = async (message, username) => {
     let response
 
     await axios.post('http://max-toxic-comment-classifier.max.us-south.containers.appdomain.cloud/model/predict', {
@@ -65,7 +67,7 @@ const fetchToxicAPI = async (message) => {
     .then((res) => {
     console.log(`statusCode: ${res.status}`)
     console.log(res.data.results[0], 60)
-    response = analyzeMessage(res.data.results[0])
+    response = analyzeMessage(res.data.results[0], username)
     })
     .catch((error) => {
     console.error(error.config)
@@ -74,11 +76,15 @@ const fetchToxicAPI = async (message) => {
     return response
 }
 
-const handleMessage = async (msg) => {
+const handleMessage = async (msg, user) => {
     const response = await fetchToxicAPI(msg)
     console.log(response, 71)
+    console.log(user, 82)
 
-    bot.postMessageToChannel('bot-testing', response, params);
+    const users = await bot.getUsers()
+    users ? console.log(users) : null
+
+    response ? bot.postEphemeral('CTPG037K4', user, response, params) : null
 }
 
 // start handler
@@ -96,10 +102,13 @@ bot.on('error', (err) => {
 
 // message handler
 bot.on('message', function(data) {
+    const msg = data.text
+    const user = data.user
+    console.log(msg, user)
     console.log(data)
     if(data.type !== 'message') {
         return;
     }
-    handleMessage(data.text);
+    handleMessage(msg, user);
 })
 
