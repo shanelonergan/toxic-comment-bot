@@ -5,11 +5,10 @@ const axios = require('axios')
 // create a bot
 const bot = new SlackBot({
     token: process.env.API_TOKEN, // Add a bot https://my.slack.com/services/new/bot and put the token
-    name: 'Toxic Comment Bot'
+    name: 'u WOT m8'
 });
 
-const analyzeMessage = async (message) => {
-    const results = await fetchToxicAPI(message)
+const analyzeMessage = (results) => {
     const originalMessage = results.original_text
     const predictions = results.predictions
 
@@ -47,6 +46,7 @@ const analyzeMessage = async (message) => {
         response = responsePart1 + flagsStr + responsePart2
     }
 
+    console.log(response, '51')
     return response
 
 }
@@ -57,22 +57,20 @@ const fetchToxicAPI = (message) => {
     })
     .then((res) => {
     console.log(`statusCode: ${res.statusCode}`)
-    console.log(res.data.results)
+    analyzeMessage(res.data.results)
     })
     .catch((error) => {
     console.error(error.config)
     })
 }
 
-const handleMessage = () => {
-    let response
-    if (msg.bot_id === undefined) {
-        console.log(msg.text)
-        response = analyzeMessage(msg.text)
-        response ? bot.postMessage(msg.user, response, { as_user: true }) : null
-    }
+const handleMessage = (msg) => {
+    console.log(msg)
+    const response = fetchToxicAPI(msg)
+    response ? bot.postMessage(msg.user, response, { as_user: true }) : null
 }
 
+// start handler
 bot.on('start', function() {
 
     const params = {
@@ -80,11 +78,18 @@ bot.on('start', function() {
     };
 
     // define channel, where bot exist. You can adjust it there https://my.slack.com/services
-    bot.postMessageToChannel('general', 'I am listening...', params);
+    bot.postMessageToChannel('bot-testing', 'I am listening...', params);
 
 });
 
-bot.on('message', (data) => {
+// error handler
+bot.on('error', (err) => {
+    console.log(err);
+})
+
+// message handler
+bot.on('message', function(data) {
+    // console.log(data)
     if(data.type !== 'message') {
         return;
     }
