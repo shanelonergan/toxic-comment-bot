@@ -82,16 +82,16 @@ const handleMessage = async (msg, user) => {
         username = userData[0].profile.display_name, 89
     }
 
-    const output = `@${username}, ${response}`
+    const output = `@${user}, ${response}`
 
     response ?
-    bot.postMessageToChannel('bot-testing', output, params)
+    bot.postMessageToChannel('general', output, params)
     : null
 }
 
 // start handler
 bot.on('start', function() {
-    bot.postMessageToChannel('bot-testing', 'I am listening...', params);
+    bot.postMessageToChannel('general', 'I am listening...', params);
 });
 
 // error handler
@@ -104,7 +104,7 @@ bot.on('message', function(data) {
     const msg = data.text
     const user = data.user
     console.log(msg, user)
-    console.log(data)
+    console.log('data:', data)
     if(data.type !== 'message') {
         return;
     }
