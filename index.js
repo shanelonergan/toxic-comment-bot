@@ -19,8 +19,8 @@ const analyzeMessage = (results, username) => {
     let toxicIndicator = false
 
     let response
-    let responsePart1 = `it looks like your message contains toxic speech. It has been flagged as: `
-    let responsePart2 = '. Please refrain from using this kind of speech. Our slack community is one of love and inclusion, and we would like to keep it that way.'
+    let responsePart1 = `it looks like your message contains toxic speech. It has been flagged as: \n`
+    let responsePart2 = '\n Please refrain from using this kind of speech. Our slack community is one of love and inclusion, and we would like to keep it that way.'
 
     for (const flag in predictions) {
         if (predictions[flag] >= 0.75) {
@@ -47,7 +47,7 @@ const analyzeMessage = (results, username) => {
 
         console.log(flags)
 
-        const flagsStr = flags.join(', ')
+        const flagsStr = flags.join('\n ')
 
         response = responsePart1 + flagsStr + responsePart2
     }
@@ -78,17 +78,19 @@ const fetchToxicAPI = async (message, username) => {
 
 const handleMessage = async (msg, user) => {
     const response = await fetchToxicAPI(msg)
-    let userData
-    console.log(response, 71)
-    console.log(user, 82)
+    let username
 
     const users = await bot.getUsers()
     if (users) {
-        userData = users['members'].filter(member => member.id === user)
-        console.log(userData.profile.display_name, 88)
+        const userData = users['members'].filter(member => member.id === user)
+        username = userData[0].profile.display_name, 89
     }
 
-    response ? bot.postEphemeral('CTPG037K4', user, response, params) : null
+    const output = `@${username}, ${response}`
+
+    response ?
+    bot.postMessageToChannel('bot-testing', output, params)
+    : null
 }
 
 // start handler
