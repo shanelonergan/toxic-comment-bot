@@ -4,8 +4,8 @@ const axios = require('axios')
 
 // create a bot
 const bot = new SlackBot({
-    token: process.env.API_TOKEN, // Add a bot https://my.slack.com/services/new/bot and put the token
-    name: 'u WOT m8'
+    token: process.env.API_TOKEN,
+    name: 'Toxic Comment Bot'
 });
 
 const params = {
@@ -19,8 +19,8 @@ const analyzeMessage = (results, username) => {
     let toxicIndicator = false
 
     let response
-    let responsePart1 = `it looks like your message contains toxic speech. It has been flagged as: \n`
-    let responsePart2 = '\n Please refrain from using this kind of speech. Our slack community is one of love and inclusion, and we would like to keep it that way.'
+    let responsePart1 = `it looks like your message contains toxic speech. It has been flagged as: \n\n     -`
+    let responsePart2 = '\n\n Please refrain from using this kind of speech. Our slack community is one of love and inclusion, and we would like to keep it that way.'
 
     for (const flag in predictions) {
         if (predictions[flag] >= 0.75) {
@@ -45,14 +45,10 @@ const analyzeMessage = (results, username) => {
             flags.push('identity hate')
         }
 
-        console.log(flags)
-
-        const flagsStr = flags.join('\n ')
+        const flagsStr = flags.join('\n     -')
 
         response = responsePart1 + flagsStr + responsePart2
     }
-
-    response ? console.log(response, 49) : null
 
     return response
 
@@ -79,8 +75,8 @@ const fetchToxicAPI = async (message, username) => {
 const handleMessage = async (msg, user) => {
     const response = await fetchToxicAPI(msg)
     let username
-
     const users = await bot.getUsers()
+
     if (users) {
         const userData = users['members'].filter(member => member.id === user)
         username = userData[0].profile.display_name, 89
@@ -89,15 +85,14 @@ const handleMessage = async (msg, user) => {
     const output = `@${username}, ${response}`
 
     response ?
-    bot.postMessageToChannel('bot-testing', output, params)
+    bot.postMessageToChannel('general', output, params)
     : null
 }
 
 // start handler
 bot.on('start', function() {
 
-    // define channel, where bot exist. You can adjust it there https://my.slack.com/services
-    bot.postMessageToChannel('bot-testing', 'I am listening...', params);
+    bot.postMessageToChannel('general', 'I am listening...', params);
 
 });
 
