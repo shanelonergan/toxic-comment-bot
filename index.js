@@ -91,7 +91,7 @@ const handleMessage = async (msg, user) => {
 
 // start handler
 bot.on('start', function() {
-    bot.postMessageToChannel('general', 'I am listening...', params);
+    // bot.postMessageToChannel('general', 'I am listening...', params);
 });
 
 // error handler
