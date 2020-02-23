@@ -82,7 +82,7 @@ const handleMessage = async (msg, user) => {
         username = userData[0].profile.display_name, 89
     }
 
-    const output = `@${user}, ${response}`
+    const output = `@${username}, ${response}`
 
     response ?
     bot.postMessageToChannel('general', output, params)
