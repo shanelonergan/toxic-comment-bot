@@ -19,7 +19,7 @@ const analyzeMessage = (results, username) => {
     let toxicIndicator = false
 
     let response
-    let responsePart1 = `it looks like your message contains toxic speech. It has been flagged as: \n\n     -`
+    let responsePart1 = `it looks like your message contains toxic speech. It has been flagged as: \n\n     🛑 `
     let responsePart2 = '\n\n Please refrain from using this kind of speech. Our slack community is one of love and inclusion, and we would like to keep it that way.'
 
     for (const flag in predictions) {
@@ -77,22 +77,21 @@ const handleMessage = async (msg, user) => {
     let username
     const users = await bot.getUsers()
 
-    if (users) {
+    if (users && response) {
         const userData = users['members'].filter(member => member.id === user)
         username = userData[0].profile.display_name, 89
+
+        const output = `${username}, ${response}`
+
+        bot.postMessageToChannel('bot-testing', output, params)
     }
-
-    const output = `@${username}, ${response}`
-
-    response ?
-    bot.postMessageToChannel('general', output, params)
-    : null
 }
 
-// start handler
-bot.on('start', function() {
-    // bot.postMessageToChannel('general', 'I am listening...', params);
-});
+// const handleMessage = async (msg, user) => {
+//     const response = await fetchToxicAPI(msg)
+
+//     bot.postMessageToChannel('bot-testing', response, params)
+// }
 
 // error handler
 bot.on('error', (err) => {
@@ -103,11 +102,9 @@ bot.on('error', (err) => {
 bot.on('message', function(data) {
     const msg = data.text
     const user = data.user
-    console.log(msg, user)
-    console.log('data:', data)
-    if(data.type !== 'message') {
-        return;
+
+    if(data.type === 'message') {
+        handleMessage(msg, user);
     }
-    handleMessage(msg, user);
 })
 
