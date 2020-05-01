@@ -12,23 +12,16 @@ const params = {
     icon_emoji: ':rotating_light:'
 };
 
-const analyzeMessage = (results, username) => {
-    const originalMessage = results.original_text
-    const predictions = results.predictions
+const analyzeMessage = (predictions, username) => {
 
-    let toxicIndicator = false
+    const resultValues = Object.values(predictions)
+    const checkValues = (value) => value >= 0.75
 
-    let response
-    let responsePart1 = `it looks like your message contains toxic speech. It has been flagged as: \n\n     🛑 `
-    let responsePart2 = '\n\n Please refrain from using this kind of speech. Our slack community is one of love and inclusion, and we would like to keep it that way.'
+    if (resultValues.some(checkValues)) {
+        let responseMessage
+        let responsePart1 = `it looks like your message contains toxic speech. It has been flagged as: \n\n     🛑 `
+        let responsePart2 = '\n\n Please refrain from using this kind of speech. Our slack community is one of love and inclusion, and we would like to keep it that way.'
 
-    for (const flag in predictions) {
-        if (predictions[flag] >= 0.75) {
-            toxicIndicator = true
-        }
-    }
-
-    if (toxicIndicator) {
         let flags = []
 
         if (predictions.toxic > 0.75) {
@@ -45,52 +38,53 @@ const analyzeMessage = (results, username) => {
             flags.push('identity hate')
         }
 
-        const flagsStr = flags.join('\n     -')
+        const flagsStr = flags.join('\n     🛑 ')
 
-        response = responsePart1 + flagsStr + responsePart2
+        responseMessage = responsePart1 + flagsStr + responsePart2
+
+        return responseMessage
+    } else {
+        return null
     }
-
-    return response
-
 }
 
 const fetchToxicAPI = async (message, username) => {
-    let response
+    let responseMessage
 
     await axios.post('http://max-toxic-comment-classifier.max.us-south.containers.appdomain.cloud/model/predict', {
         text: [message]
     })
     .then((res) => {
-    console.log(`statusCode: ${res.status}`)
-    console.log(res.data.results[0], 60)
-    response = analyzeMessage(res.data.results[0], username)
+        console.log(`res:`, res.data)
+        console.log(res.data.results[0], 60)
+        responseMessage = analyzeMessage(res.data.results[0].predictions, username)
     })
     .catch((error) => {
-    console.error(error.config)
+        console.error(error.config)
     })
 
-    return response
+    return responseMessage
 }
 
 const handleMessage = async (msg, user) => {
-    const response = await fetchToxicAPI(msg)
+    const responseMessage = await fetchToxicAPI(msg)
     let username
     const users = await bot.getUsers()
 
-    if (users && response) {
+    if (users && responseMessage) {
         const userData = users['members'].filter(member => member.id === user)
-        username = userData[0].profile.display_name, 89
+        username = userData[0].profile.display_name
 
-        const output = `${username}, ${response}`
+        const output = `${username}, ${responseMessage}`
 
         bot.postMessageToChannel('bot-testing', output, params)
     }
 }
 
 // const handleMessage = async (msg, user) => {
-//     const response = await fetchToxicAPI(msg)
+//     const responseMessage = await fetchToxicAPI(msg)
 
-//     bot.postMessageToChannel('bot-testing', response, params)
+//     bot.postMessageToChannel('bot-testing', responseMessage, params)
 // }
 
 // error handler
@@ -99,11 +93,13 @@ bot.on('error', (err) => {
 })
 
 // message handler
-bot.on('message', function(data) {
+bot.on('message', (data) => {
     const msg = data.text
     const user = data.user
 
-    if(data.type === 'message') {
+    console.log(data)
+
+    if(data.type === 'message' && data.subtype !== 'bot_message') {
         handleMessage(msg, user);
     }
 })
