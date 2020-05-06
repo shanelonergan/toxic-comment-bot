@@ -12,39 +12,33 @@ const params = {
     icon_emoji: ':rotating_light:'
 };
 
-const analyzeMessage = (predictions, username) => {
+// error handler
+bot.on('error', (err) => {
+    console.log(err);
+})
 
-    const resultValues = Object.values(predictions)
-    const checkValues = (value) => value >= 0.75
+// listen to messages
+bot.on('message', (data) => {
+    const msg = data.text
+    const user = data.user
 
-    if (resultValues.some(checkValues)) {
-        let responseMessage
-        let responsePart1 = `it looks like your message contains toxic speech. It has been flagged as: \n\n     🛑 `
-        let responsePart2 = '\n\n Please refrain from using this kind of speech. Our slack community is one of love and inclusion, and we would like to keep it that way.'
+    if(data.type === 'message' && data.subtype !== 'bot_message') {
+        handleMessage(msg, user);
+    }
+})
 
-        let flags = []
+const handleMessage = async (msg, user) => {
+    const responseMessage = await fetchToxicAPI(msg)
+    let username
+    const users = await bot.getUsers()
 
-        if (predictions.toxic > 0.75) {
-            flags.push('toxic')
-        } if (predictions.severe_toxic > 0.75) {
-            flags.push('severely toxic')
-        } if (predictions.obscene > 0.75) {
-            flags.push('obscene')
-        } if (predictions.threat > 0.75) {
-            flags.push('threatening')
-        } if (predictions.insult > 0.75) {
-            flags.push('insulting')
-        } if (predictions.identity_hate > 0.75) {
-            flags.push('identity hate')
-        }
+    if (users && responseMessage) {
+        const userData = users['members'].filter(member => member.id === user)
+        username = userData[0].profile.display_name
 
-        const flagsStr = flags.join('\n     🛑 ')
+        const output = `${username}, ${responseMessage}`
 
-        responseMessage = responsePart1 + flagsStr + responsePart2
-
-        return responseMessage
-    } else {
-        return null
+        bot.postMessageToChannel('toxic-bot-testing', output, params)
     }
 }
 
@@ -66,41 +60,35 @@ const fetchToxicAPI = async (message, username) => {
     return responseMessage
 }
 
-const handleMessage = async (msg, user) => {
-    const responseMessage = await fetchToxicAPI(msg)
-    let username
-    const users = await bot.getUsers()
+const analyzeMessage = (predictions, username) => {
 
-    if (users && responseMessage) {
-        const userData = users['members'].filter(member => member.id === user)
-        username = userData[0].profile.display_name
+    const resultValues = Object.values(predictions)
+    const checkValues = (value) => value >= 0.75
 
-        const output = `${username}, ${responseMessage}`
+    if (resultValues.some(checkValues)) {
+        let responsePart1 = `it looks like your message contains toxic speech. It has been flagged as: \n\n     🛑 `
+        let responsePart2 = '\n\n Please refrain from using this kind of speech. Our slack community is one of love and inclusion, and we would like to keep it that way.'
 
-        bot.postMessageToChannel('bot-testing', output, params)
+        let flagsArr = []
+
+        if (predictions.toxic > 0.75) {
+            flags.push('toxic')
+        } if (predictions.severe_toxic > 0.75) {
+            flags.push('severely toxic')
+        } if (predictions.obscene > 0.75) {
+            flags.push('obscene')
+        } if (predictions.threat > 0.75) {
+            flags.push('threatening')
+        } if (predictions.insult > 0.75) {
+            flags.push('insulting')
+        } if (predictions.identity_hate > 0.75) {
+            flags.push('identity hate')
+        }
+
+        const flagsStr = flagsArr.join('\n     🛑 ')
+
+        return responsePart1 + flagsStr + responsePart2
+    } else {
+        return null
     }
 }
-
-// const handleMessage = async (msg, user) => {
-//     const responseMessage = await fetchToxicAPI(msg)
-
-//     bot.postMessageToChannel('bot-testing', responseMessage, params)
-// }
-
-// error handler
-bot.on('error', (err) => {
-    console.log(err);
-})
-
-// message handler
-bot.on('message', (data) => {
-    const msg = data.text
-    const user = data.user
-
-    console.log(data)
-
-    if(data.type === 'message' && data.subtype !== 'bot_message') {
-        handleMessage(msg, user);
-    }
-})
-
