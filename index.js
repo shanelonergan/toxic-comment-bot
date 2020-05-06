@@ -14,51 +14,8 @@ const params = {
 
 // error handler
 bot.on('error', (err) => {
-    console.log(err);
+    console.log("error:", err);
 })
-
-// listen to messages
-bot.on('message', (data) => {
-    const msg = data.text
-    const user = data.user
-
-    if(data.type === 'message' && data.subtype !== 'bot_message') {
-        handleMessage(msg, user);
-    }
-})
-
-const handleMessage = async (msg, user) => {
-    const responseMessage = await fetchToxicAPI(msg)
-    let username
-    const users = await bot.getUsers()
-
-    if (users && responseMessage) {
-        const userData = users['members'].filter(member => member.id === user)
-        username = userData[0].profile.display_name
-
-        const output = `${username}, ${responseMessage}`
-
-        bot.postMessageToChannel('toxic-bot-testing', output, params)
-    }
-}
-
-const fetchToxicAPI = async (message, username) => {
-    let responseMessage
-
-    await axios.post('http://max-toxic-comment-classifier.max.us-south.containers.appdomain.cloud/model/predict', {
-        text: [message]
-    })
-    .then((res) => {
-        console.log(`res:`, res.data)
-        console.log(res.data.results[0], 60)
-        responseMessage = analyzeMessage(res.data.results[0].predictions, username)
-    })
-    .catch((error) => {
-        console.error(error.config)
-    })
-
-    return responseMessage
-}
 
 const analyzeMessage = (predictions, username) => {
 
@@ -72,17 +29,17 @@ const analyzeMessage = (predictions, username) => {
         let flagsArr = []
 
         if (predictions.toxic > 0.75) {
-            flags.push('toxic')
+            flagsArr.push('toxic')
         } if (predictions.severe_toxic > 0.75) {
-            flags.push('severely toxic')
+            flagsArr.push('severely toxic')
         } if (predictions.obscene > 0.75) {
-            flags.push('obscene')
+            flagsArr.push('obscene')
         } if (predictions.threat > 0.75) {
-            flags.push('threatening')
+            flagsArr.push('threatening')
         } if (predictions.insult > 0.75) {
-            flags.push('insulting')
+            flagsArr.push('insulting')
         } if (predictions.identity_hate > 0.75) {
-            flags.push('identity hate')
+            flagsArr.push('identity hate')
         }
 
         const flagsStr = flagsArr.join('\n     🛑 ')
@@ -92,3 +49,46 @@ const analyzeMessage = (predictions, username) => {
         return null
     }
 }
+
+const fetchToxicAPI = async (message, username) => {
+    let responseMessage
+
+    await axios.post('http://max-toxic-comment-classifier.max.us-south.containers.appdomain.cloud/model/predict', {
+        text: [message]
+    })
+    .then((res) => {
+        console.log('res: ', res.data)
+        console.log("results: ", res.data.results[0])
+        responseMessage = analyzeMessage(res.data.results[0].predictions, username)
+    })
+    .catch((error) => {
+        console.error("fetch error: ", error)
+    })
+
+    return responseMessage
+}
+
+const handleMessage = async (msg, user) => {
+    const responseMessage = await fetchToxicAPI(msg)
+    let username
+    const users = await bot.getUsers()
+
+    if (users && responseMessage) {
+        const userData = users['members'].filter(member => member.id === user)
+        username = userData[0].profile.display_name
+
+        const output = `${username}, ${responseMessage}`
+
+        bot.postMessageToChannel('general', output, params)
+    }
+}
+
+// listen to messages
+bot.on('message', (data) => {
+    const msg = data.text
+    const user = data.user
+
+    if(data.type === 'message' && data.subtype !== 'bot_message') {
+        handleMessage(msg, user);
+    }
+})
